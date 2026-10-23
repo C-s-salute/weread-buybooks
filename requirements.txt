@@ -1,0 +1,22 @@
+# weread-buybooks 依赖
+#
+# 环境要求（先看这条，能省掉 90% 的安装问题）：
+#   Python >= 3.12，必须是 64 位；推荐 3.13 64 位。
+#
+# 为什么卡 3.12：
+#   numpy 2.5 的 requires-python 是 >=3.12，matplotlib 3.11 是 >=3.11。
+#   版本不够时 pip 只能装老版本；若同时是 32 位解释器，官方不带 32 位 wheel，
+#   pip 会退去编译源码，报错通常是 "Could not find a version that satisfies..."
+#   或 "No matching distribution"，看不出真实原因。
+#
+# 装之前先升 pip（老 pip 解析不到新 wheel tag）：
+#   python -m pip install -U pip
+#
+# 想要**实测过**的精确版本，用 requirements-lock.txt：
+#   pip install -r requirements-lock.txt
+
+playwright>=1.40,<2
+openpyxl>=3.1,<4
+matplotlib>=3.8,<4
+requests>=2.31,<3
+numpy>=1.26,<3

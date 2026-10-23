@@ -1,0 +1,280 @@
+{
+  "schema_version": "1",
+  "capabilities": [
+    "capture",
+    "plan",
+    "render"
+  ],
+  "functional_degradations": [
+    {
+      "capability": "capture",
+      "trigger": "登录态失效（wr_vid 缺失）、微信读书接口返回空或改版、网络不可达、命中平台限流",
+      "fallback": "保留 --work 目录里已有的 _wallet3.json / _web_shelf2.json / _bookmeta_v5.json，改跑 --only score,excel,html；重跑 login.py 后再补抓",
+      "user_input": "必要时提供上一次成功运行的数据目录",
+      "limitations": "书架与价格停在上次抓取时点，新增/调价的书不会出现；报告会标注生成时间",
+      "evidence_label": "部分验证",
+      "recovery": "python scripts/login.py 重新扫码，或等限流解除后 python scripts/run_pipeline.py --only fetch",
+      "stop_condition": "既无历史数据、又无法完成登录时，不出报告，直接说明缺哪一步"
+    },
+    {
+      "capability": "plan",
+      "trigger": "书架或余额数据缺失、_web_shelf2.json 为空、余额字段读不到",
+      "fallback": "只输出已有字段的统计，四套方案标记为未计算，不臆造余额与书目",
+      "user_input": "用户在 App「我 → 福利」看到的书币余额",
+      "limitations": "方案无法生成，仅能给出待付费书单与价值评分",
+      "evidence_label": "未验证",
+      "recovery": "补齐抓取后重跑 --only score,excel,html",
+      "stop_condition": "余额与书目都缺时停止出方案，不用猜测值顶替"
+    },
+    {
+      "capability": "render",
+      "trigger": "Excel 目标文件被占用、matplotlib 中文字体缺失、输出目录不可写",
+      "fallback": "Excel 退到带时间戳的备选文件名继续产出；字体缺失时图表降级为无中文标签但报告照出",
+      "user_input": "关闭正在打开的工作簿后重跑",
+      "limitations": "图表中文可能显示为方框；备选文件名与本名不同",
+      "evidence_label": "已验证",
+      "recovery": "关闭占用文件后 python scripts/run_pipeline.py --only excel,html,charts",
+      "stop_condition": "目录不可写且无任何可写备选路径时停止，并给出目标路径与权限检查结果"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "python-runtime",
+      "type": "runtime",
+      "required": true,
+      "auth_type": "none",
+      "capabilities": ["capture", "plan", "render"],
+      "checks": [
+        {
+          "id": "python-version",
+          "type": "python",
+          "required": true,
+          "min_version": "3.12"
+        }
+      ],
+      "setup": {
+        "official_home_url": "https://www.python.org/downloads/",
+        "official_docs_url": "https://docs.python.org/3/",
+        "download_url": "https://www.python.org/downloads/windows/",
+        "steps": [
+          "安装 64 位 Python 3.12 或 3.13（安装包务必选 64-bit / Windows installer 64-bit）",
+          "py -3.13 -m venv .venv 创建独立虚拟环境",
+          ".venv\\Scripts\\activate 激活",
+          "python -m pip install -U pip",
+          "pip install -r requirements-lock.txt",
+          "python scripts/check_environment.py 确认输出 ready"
+        ],
+        "verify": "python -c \"import sys,platform;print(sys.version.split()[0],platform.architecture()[0])\" 应输出 3.12+ 与 64bit",
+        "security": "只使用官方 python.org 安装包；项目依赖装在 venv 内，不污染系统环境；不需要任何凭据",
+        "verified_at": "2026-10-21",
+        "applies_to_version": "3.12 / 3.13 (64-bit)"
+      },
+      "degradation": [
+        {
+          "capability": "capture",
+          "trigger": "Python 低于 3.12 或为 32 位，playwright / matplotlib 装不上",
+          "fallback": "不执行抓取，先按 setup 重建 64 位环境",
+          "user_input": "",
+          "limitations": "全流程不可用",
+          "evidence_label": "已验证",
+          "recovery": "换 64 位 3.12+ 重建 venv 后重跑 check_environment.py",
+          "stop_condition": "解释器不满足最低版本时停止"
+        },
+        {
+          "capability": "plan",
+          "trigger": "同上",
+          "fallback": "无（评分为纯 Python 计算，但同一解释器不可用）",
+          "user_input": "",
+          "limitations": "无法计算价值评分",
+          "evidence_label": "已验证",
+          "recovery": "同上",
+          "stop_condition": "解释器不满足最低版本时停止"
+        },
+        {
+          "capability": "render",
+          "trigger": "同上，或 openpyxl / matplotlib 缺失",
+          "fallback": "无",
+          "user_input": "",
+          "limitations": "无法生成工作簿与图表",
+          "evidence_label": "已验证",
+          "recovery": "pip install -r requirements-lock.txt 后重跑",
+          "stop_condition": "依赖缺失且用户拒绝安装时停止"
+        }
+      ]
+    },
+    {
+      "id": "playwright-browser",
+      "type": "local-tool",
+      "required": true,
+      "auth_type": "none",
+      "capabilities": ["capture"],
+      "checks": [
+        {
+          "id": "playwright-package",
+          "type": "python",
+          "required": true,
+          "name": "playwright",
+          "min_version": "1.40"
+        }
+      ],
+      "setup": {
+        "official_home_url": "https://playwright.dev/",
+        "official_docs_url": "https://playwright.dev/python/docs/intro",
+        "download_url": "https://pypi.org/project/playwright/",
+        "steps": [
+          "pip install \"playwright>=1.40,<2\"",
+          "本机已装 Edge 或 Chrome 时无需再下载浏览器；否则 python -m playwright install chromium",
+          "python scripts/check_environment.py 确认浏览器通道一行显示 msedge / chrome / chromium"
+        ],
+        "verify": "python scripts/check_environment.py 输出中出现「[OK] 浏览器通道」",
+        "security": "只访问 weread.qq.com 域名；浏览器以 headless 运行，不加载第三方扩展",
+        "verified_at": "2026-10-21",
+        "applies_to_version": "playwright 1.64.0"
+      },
+      "degradation": [
+        {
+          "capability": "capture",
+          "trigger": "playwright 未安装或无可用浏览器通道",
+          "fallback": "跳过抓取，用已有 --work 数据只出报告",
+          "user_input": "",
+          "limitations": "无法刷新书架与价格数据",
+          "evidence_label": "已验证",
+          "recovery": "pip install playwright 后 python -m playwright install chromium",
+          "stop_condition": "无历史数据且无法安装时停止"
+        }
+      ]
+    },
+    {
+      "id": "weread-account",
+      "type": "account",
+      "required": true,
+      "auth_type": "browser-login",
+      "capabilities": ["capture"],
+      "checks": [
+        {
+          "id": "login-cookie",
+          "type": "auth_probe",
+          "required": true,
+          "target": "https://weread.qq.com/"
+        }
+      ],
+      "setup": {
+        "official_home_url": "https://weread.qq.com/",
+        "official_docs_url": "https://weread.qq.com/",
+        "login_url": "https://weread.qq.com/",
+        "console_path": [
+          "浏览器打开 https://weread.qq.com/",
+          "页面右上角点「登录」",
+          "用微信扫码，扫码成功后回到书架页",
+          "回到终端执行 python scripts/login.py，脚本复用同一 profile 目录完成登录态落盘"
+        ],
+        "credential_storage": "登录态只存在浏览器 profile 目录（默认 ~/.weread-buybooks/profile），不落明文 cookie 或 token 文件，不写入日志与对话",
+        "rotate_or_revoke": "在微信读书网页版右上角菜单退出登录，或删除 profile 目录后重跑 login.py；微信侧可在「微信 → 设置 → 个人信息与权限 → 授权管理」撤销网页授权",
+        "steps": [
+          "python scripts/login.py 打开扫码窗口",
+          "用微信扫码确认",
+          "脚本检测到 wr_vid cookie 后自动关闭浏览器并保存 profile",
+          "python scripts/check_environment.py 确认无误后进入抓取"
+        ],
+        "verify": "python scripts/login.py 结束时打印「登录态已保存」；抓取阶段不再提示未登录",
+        "security": "不要求用户在对话中粘贴 cookie 或 token；profile 目录已在 .gitignore 中排除，不随技能分发",
+        "verified_at": "2026-10-21",
+        "applies_to_version": "微信读书网页版（2026-10 界面）"
+      },
+      "degradation": [
+        {
+          "capability": "capture",
+          "trigger": "profile 中无 wr_vid、登录态过期、平台要求重新验证",
+          "fallback": "用 --work 里已有数据出报告，并提示需重新扫码",
+          "user_input": "",
+          "limitations": "数据停留在上次成功抓取的时点",
+          "evidence_label": "已验证",
+          "recovery": "python scripts/login.py 重新扫码后 --only fetch",
+          "stop_condition": "用户无法扫码且无历史数据时停止"
+        }
+      ]
+    },
+    {
+      "id": "node-for-booklist",
+      "type": "local-tool",
+      "required": false,
+      "auth_type": "none",
+      "capabilities": ["capture"],
+      "checks": [
+        {
+          "id": "node-binary",
+          "type": "cli",
+          "required": false,
+          "command": "node"
+        }
+      ],
+      "setup": {
+        "official_home_url": "https://nodejs.org/",
+        "official_docs_url": "https://nodejs.org/docs/latest/api/",
+        "steps": [
+          "安装 Node LTS（node 在 PATH 中即可）",
+          "可用 WEREAD_NODE 环境变量指定绝对路径",
+          "python scripts/check_environment.py 确认 node 一行显示路径"
+        ],
+        "verify": "node -v 能输出版本号；check_environment.py 显示 [OK] node",
+        "security": "仅在本地解析已下载的 HTML，不联网；nuxt_extract.js 在无 require / process 的 vm 上下文中执行，限 8 秒超时",
+        "verified_at": "2026-10-21",
+        "applies_to_version": "Node 18 及以上"
+      },
+      "degradation": [
+        {
+          "capability": "capture",
+          "trigger": "node 未安装或不支持 --only booklist",
+          "fallback": "跳过公开书单阶段，书架分析与购书方案照常产出",
+          "user_input": "",
+          "limitations": "报告缺少书单总览与书单明细两个 sheet",
+          "evidence_label": "已验证",
+          "recovery": "安装 Node 后 --only booklist",
+          "stop_condition": "不适用（缺 node 不影响核心方案）"
+        }
+      ]
+    },
+    {
+      "id": "network-weread",
+      "type": "network",
+      "required": true,
+      "auth_type": "none",
+      "capabilities": ["capture"],
+      "checks": [
+        {
+          "id": "weread-reachable",
+          "type": "url",
+          "required": true,
+          "url": "https://weread.qq.com/",
+          "method": "GET",
+          "expected_status": 200
+        }
+      ],
+      "setup": {
+        "official_home_url": "https://weread.qq.com/",
+        "official_docs_url": "https://weread.qq.com/",
+        "steps": [
+          "确认能正常打开 https://weread.qq.com/",
+          "企业网络或代理环境需要放行该域名",
+          "python scripts/check_environment.py 与一次 --limit 抓取验证连通"
+        ],
+        "verify": "浏览器或 curl 访问 https://weread.qq.com/ 返回 200",
+        "security": "只访问微信读书官方域名，不经过第三方中转；抓取间隔 0.35 秒以上，避免触发平台限流",
+        "verified_at": "2026-10-21",
+        "applies_to_version": "不适用"
+      },
+      "degradation": [
+        {
+          "capability": "capture",
+          "trigger": "域名不可达、超时、返回非 200、被限流",
+          "fallback": "有限次重试后停止抓取，用已有数据出报告",
+          "user_input": "",
+          "limitations": "数据不刷新；重试次数有限，不无限循环",
+          "evidence_label": "部分验证",
+          "recovery": "网络恢复或限流解除后 --only fetch",
+          "stop_condition": "连续失败且无历史数据时停止"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+# 实测通过的精确版本（Python 3.13.14 / Windows 64-bit）
+# 用途：复现同一套环境；上游发新版导致行为变化时回退到这一组。
+#   pip install -r requirements-lock.txt
+# Linux / macOS 同样适用（这几个包都有全平台 wheel）。
+playwright==1.64.0
+openpyxl==3.1.5
+matplotlib==3.11.2
+numpy==2.5.0
+requests==2.34.2

@@ -1,0 +1,12 @@
+# 统一换行符，避免 Windows 提交时整文件显示为改动
+* text=auto eol=lf
+
+*.py   text eol=lf
+*.js   text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.txt  text eol=lf
+
+# 二进制
+*.png binary
+*.xlsx binary

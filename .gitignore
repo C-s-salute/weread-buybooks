@@ -1,0 +1,39 @@
+# 抓取数据（含个人账户与阅读画像，绝不入库）
+weread_data/
+_bookmeta*.json
+_web_shelf*.json
+_wallet*.json
+_progress*.json
+_booklists.json
+_bookdetail*.json
+_valuescore*.json
+_reviewstats.json
+_refresh*state*.json
+_refresh_meta.json
+_bl_tmp/
+
+# 产物（含个人余额与阅读进度）
+微信读书_*.xlsx
+微信读书_*.html
+微信读书_*.md
+fig_*.png
+
+# 登录态 / 凭证
+.weread_cookie
+.weread_key
+_weread_state.json
+_edge_profile*/
+profile/
+*.cookie
+*.token
+booklist_urls.txt
+_app_ref.json
+dist/
+
+# 运行环境
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.DS_Store
+Thumbs.db
