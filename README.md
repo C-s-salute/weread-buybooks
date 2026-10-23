@@ -8,6 +8,10 @@
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![python](https://img.shields.io/badge/python-3.12%2B%20(64--bit)-brightgreen)
 
+> **同系列技能**：如果你想找的是「全平台有哪些书用体验卡就能免费读、书荒该抄哪些作业」，
+> 用 [weread-trial-card-list](https://github.com/C-s-salute/weread-trial-card-list)。
+> 本技能管你的**书架和书币**，它管**全平台免费可读书单**，两者数据源不同，可以配合使用。
+
 ---
 
 ## 效果预览
@@ -109,6 +113,7 @@
 ### 不适用
 
 - 只查单本书信息、只管理书架增删 → 用 `weread-skills`
+- 想找「全平台有哪些书用体验卡能免费读、书荒抄哪些作业」→ 用 [weread-trial-card-list](https://github.com/C-s-salute/weread-trial-card-list)
 - 想要平台全站榜单、他人书架、社交数据 → 网页端没有这些接口
 - 兑换进度 / 已领书币明细 → 只能在 App「我 → 福利」查看，本项目不会编造该数字
 
